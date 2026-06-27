@@ -32,6 +32,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.weighttracker.data.SummaryRepository
+import com.example.weighttracker.viewmodel.SummaryViewModel
+import com.example.weighttracker.viewmodel.SummaryViewModelFactory
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weighttracker.data.StepRepository
 import com.example.weighttracker.data.WeightDatabase
@@ -40,6 +43,7 @@ import com.example.weighttracker.ui.screens.FoodScreen
 import com.example.weighttracker.ui.screens.HomeScreen
 import com.example.weighttracker.ui.screens.ProgressScreen
 import com.example.weighttracker.ui.screens.StepScreen
+import com.example.weighttracker.ui.screens.SummaryScreen
 import com.example.weighttracker.ui.screens.WeightScreen
 import com.example.weighttracker.viewmodel.StepViewModel
 import com.example.weighttracker.viewmodel.StepViewModelFactory
@@ -64,6 +68,7 @@ class MainActivity : ComponentActivity() {
         setContent {
 
             var selectedIndex by remember { mutableStateOf(0) }
+            var showSummary by remember { mutableStateOf(false) }
 
             val database = WeightDatabase.getDatabase(applicationContext)
 
@@ -86,6 +91,19 @@ class MainActivity : ComponentActivity() {
             val foodViewModel: FoodViewModel =
                 viewModel(factory = foodFactory)
 
+            val summaryRepository =
+                SummaryRepository(
+                    database.summaryDao()
+                )
+
+            val summaryFactory =
+                SummaryViewModelFactory(
+                    summaryRepository
+                )
+
+            val summaryViewModel: SummaryViewModel =
+                viewModel(factory = summaryFactory)
+
             val navItems = listOf(
                 NavItem("Home", Icons.Rounded.Home),
                 NavItem("Weight", Icons.Rounded.FitnessCenter),
@@ -97,59 +115,82 @@ class MainActivity : ComponentActivity() {
             Scaffold(
                 containerColor = SurfaceBg,
                 bottomBar = {
-                    NavigationBar(
-                        containerColor = CardWhite,
-                        tonalElevation = 0.dp
-                    ) {
-                        navItems.forEachIndexed { index, item ->
+                    if (!showSummary) {
+                        NavigationBar(
+                            containerColor = CardWhite,
+                            tonalElevation = 0.dp
+                        ) {
+                            navItems.forEachIndexed { index, item ->
 
-                            val isSelected = selectedIndex == index
+                                val isSelected =
+                                    selectedIndex == index
 
-                            NavigationBarItem(
-                                selected = isSelected,
-                                onClick = {
-                                    selectedIndex = index
-                                },
-                                icon = {
-                                    Icon(
-                                        imageVector = item.icon,
-                                        contentDescription = item.label,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                },
-                                label = {
-                                    Text(
-                                        text = item.label,
-                                        fontSize = 11.sp,
-                                        fontWeight =
-                                            if (isSelected)
-                                                FontWeight.SemiBold
-                                            else
-                                                FontWeight.Normal
-                                    )
-                                },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = PrimaryBlue,
-                                    selectedTextColor = PrimaryBlue,
-                                    unselectedIconColor = TextSecondary,
-                                    unselectedTextColor = TextSecondary,
-                                    indicatorColor = PrimaryBlue.copy(alpha = 0.12f)
+                                NavigationBarItem(
+                                    selected = isSelected,
+                                    onClick = {
+                                        selectedIndex = index
+                                    },
+                                    icon = {
+                                        Icon(
+                                            imageVector = item.icon,
+                                            contentDescription = item.label,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    },
+                                    label = {
+                                        Text(
+                                            text = item.label,
+                                            fontSize = 11.sp,
+                                            fontWeight =
+                                                if (isSelected)
+                                                    FontWeight.SemiBold
+                                                else
+                                                    FontWeight.Normal
+                                        )
+                                    },
+                                    colors =
+                                        NavigationBarItemDefaults.colors(
+                                            selectedIconColor = PrimaryBlue,
+                                            selectedTextColor = PrimaryBlue,
+                                            unselectedIconColor = TextSecondary,
+                                            unselectedTextColor = TextSecondary,
+                                            indicatorColor =
+                                                PrimaryBlue.copy(alpha = 0.12f)
+                                        )
                                 )
-                            )
+                            }
                         }
                     }
                 }
-            ) { padding ->
+            ){ padding ->
 
                 Box(
                     modifier = Modifier.padding(padding)
                 ) {
-                    when (selectedIndex) {
-                        0 -> HomeScreen(viewModel = weightViewModel)
-                        1 -> WeightScreen(viewModel = weightViewModel)
-                        2 -> StepScreen(viewModel = stepViewModel)
-                        3 -> FoodScreen(viewModel = foodViewModel)
-                        4 -> ProgressScreen(viewModel = weightViewModel)
+                    if (showSummary) {
+                        SummaryScreen(
+                            summaryViewModel = summaryViewModel,
+                            weightViewModel = weightViewModel,
+                            stepViewModel = stepViewModel,
+                            foodViewModel = foodViewModel,
+                            onBack = {
+                                showSummary = false
+                            }
+                        )
+
+                    } else {
+                        when (selectedIndex) {
+                            0 -> HomeScreen(
+                                viewModel = weightViewModel,
+                                onSummaryClick = {
+                                    showSummary = true
+                                }
+                            )
+                            1 -> WeightScreen(viewModel = weightViewModel)
+                            2 -> StepScreen(viewModel = stepViewModel)
+                            3 -> FoodScreen(viewModel = foodViewModel)
+                            4 -> ProgressScreen(viewModel = weightViewModel)
+                        }
                     }
                 }
             }
