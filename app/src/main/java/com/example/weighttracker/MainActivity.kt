@@ -18,6 +18,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.rounded.DirectionsWalk
+import com.example.weighttracker.data.StepRepository
+import com.example.weighttracker.ui.screens.StepScreen
+import com.example.weighttracker.viewmodel.StepViewModel
+import com.example.weighttracker.viewmodel.StepViewModelFactory
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -58,11 +63,15 @@ class MainActivity : ComponentActivity() {
             val repository    = WeightRepository(database.weightDao())
             val factory       = WeightViewModelFactory(repository)
             val weightViewModel: WeightViewModel = viewModel(factory = factory)
+            val stepRepository = StepRepository(database.stepDao())
+            val stepFactory = StepViewModelFactory(stepRepository)
+            val stepViewModel: StepViewModel = viewModel(factory = stepFactory)
             // ─────────────────────────────────────────────────────────────────
 
             val navItems = listOf(
                 NavItem("Home",     Icons.Rounded.Home),
                 NavItem("Weight",   Icons.Rounded.FitnessCenter),
+                NavItem("Steps", Icons.Rounded.DirectionsWalk),
                 NavItem("Progress", Icons.Rounded.ShowChart)
             )
 
@@ -110,7 +119,8 @@ class MainActivity : ComponentActivity() {
                     when (selectedIndex) {
                         0 -> HomeScreen(viewModel = weightViewModel)
                         1 -> WeightScreen(viewModel = weightViewModel)
-                        2 -> ProgressScreen(viewModel = weightViewModel)
+                        2 -> StepScreen(viewModel = stepViewModel)
+                        3 -> ProgressScreen(viewModel = weightViewModel)
                     }
                 }
             }

@@ -6,13 +6,17 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [WeightEntity::class],
-    version = 1,
+    entities = [
+        WeightEntity::class,
+        StepEntity::class
+    ],
+    version = 2,
     exportSchema = false
 )
 abstract class WeightDatabase : RoomDatabase() {
 
     abstract fun weightDao(): WeightDao
+    abstract fun stepDao(): StepDao
 
     companion object {
         @Volatile
@@ -24,7 +28,9 @@ abstract class WeightDatabase : RoomDatabase() {
                     context.applicationContext,
                     WeightDatabase::class.java,
                     "weight_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
 
                 INSTANCE = instance
                 instance
