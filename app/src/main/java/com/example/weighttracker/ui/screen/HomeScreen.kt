@@ -56,7 +56,8 @@ private val TextSecondary  = Color(0xFF6B7280)
 
 @Composable
 fun HomeScreen(
-    viewModel: WeightViewModel
+    viewModel: WeightViewModel,
+    onSummaryClick: () -> Unit
 ) {
     // ── Unchanged logic ───────────────────────────────────────────────────────
     val weights by viewModel.allWeights.collectAsState()
@@ -124,6 +125,12 @@ fun HomeScreen(
 
             // ── Aktivitas terakhir ────────────────────────────────────────────
             LastActivityCard(lastActivity = lastActivity)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SummaryButton(
+                onClick = onSummaryClick
+            )
         }
     }
 }
@@ -346,6 +353,33 @@ fun DashboardCard(
                 text  = label,
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
+            )
+        }
+    }
+}
+
+@Composable
+private fun SummaryButton(
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = PrimaryBlue
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Summary Hari Ini",
+                color = Color.White,
+                fontWeight = FontWeight.Bold
             )
         }
     }

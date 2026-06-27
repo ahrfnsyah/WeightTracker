@@ -9,9 +9,10 @@ import androidx.room.RoomDatabase
     entities = [
         WeightEntity::class,
         StepEntity::class,
-        FoodEntity::class
+        FoodEntity::class,
+        SummaryEntity::class
     ],
-    version = 3,
+    version = 5,
     exportSchema = false
 )
 abstract class WeightDatabase : RoomDatabase() {
@@ -20,6 +21,8 @@ abstract class WeightDatabase : RoomDatabase() {
     abstract fun stepDao(): StepDao
 
     abstract fun foodDao(): FoodDao
+
+    abstract fun summaryDao(): SummaryDao
 
     companion object {
         @Volatile
