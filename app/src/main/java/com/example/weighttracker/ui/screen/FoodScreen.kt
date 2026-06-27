@@ -12,8 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.DirectionsWalk
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Fastfood
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
@@ -26,34 +26,43 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.weighttracker.data.StepEntity
-import com.example.weighttracker.viewmodel.StepViewModel
+import com.example.weighttracker.data.FoodEntity
+import com.example.weighttracker.viewmodel.FoodViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-// ── Palette (konsisten dengan semua screen) ───────────────────────────────────
+// ── Palette ───────────────────────────────────────────────────────────────────
 private val PrimaryBlue   = Color(0xFF4F8EF7)
 private val PrimaryPurple = Color(0xFF8B6FF7)
-private val AccentOrange  = Color(0xFFFF8C42)
 private val AccentRed     = Color(0xFFFF5C6A)
 private val SurfaceBg     = Color(0xFFF5F7FF)
 private val CardWhite     = Color(0xFFFFFFFF)
 private val TextPrimary   = Color(0xFF1A1D2E)
 private val TextSecondary = Color(0xFF6B7280)
 
+// ── Screen ────────────────────────────────────────────────────────────────────
 @Composable
-fun StepScreen(
-    viewModel: StepViewModel
+fun FoodScreen(
+    viewModel: FoodViewModel
 ) {
-    // ── Unchanged logic ───────────────────────────────────────────────────────
-    var stepInput    by remember { mutableStateOf("") }
-    var selectedStep by remember { mutableStateOf<StepEntity?>(null) }
+    var foodName       by remember { mutableStateOf("") }
+    var calories       by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("Semua") }
-    val stepList by viewModel.allSteps.collectAsState()
+    var selectedFood   by remember { mutableStateOf<FoodEntity?>(null) }
 
-    val filteredSteps = remember(stepList, selectedFilter) {
+    val foodList by viewModel.allFoods.collectAsState()
+
+    val todayCalories = remember(foodList) {
+        val today = LocalDateTime.now()
+            .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
+        foodList
+            .filter { it.date.startsWith(today) }
+            .sumOf { it.calories }
+    }
+
+    val filteredList = remember(foodList, selectedFilter) {
         val now = LocalDateTime.now()
-        stepList.filter { item ->
+        foodList.filter { item ->
             if (selectedFilter == "Semua") {
                 true
             } else {
@@ -72,16 +81,6 @@ fun StepScreen(
             }
         }
     }
-    // ─────────────────────────────────────────────────────────────────────────
-
-    // Hitung todayTotal di luar LazyColumn agar bisa dipakai sebagai kondisi item
-    val todayTotal = remember(stepList) {
-        val today = LocalDateTime.now()
-            .format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
-        stepList
-            .filter { it.date.startsWith(today) }
-            .sumOf { it.steps }
-    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -92,70 +91,78 @@ fun StepScreen(
                 .fillMaxSize()
                 .padding(horizontal = 20.dp),
             contentPadding      = PaddingValues(vertical = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(0.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
             // ── Header ────────────────────────────────────────────────────────
             item {
                 Text(
-                    text       = "Step Tracker",
+                    text       = "Food Tracker",
                     style      = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color      = TextPrimary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text  = "Catat jumlah langkah harian Anda",
+                    text  = "Catat asupan makanan harian Anda",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary
                 )
-                Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // ── Input card ────────────────────────────────────────────────────
+            // ── Input Card ────────────────────────────────────────────────────
             item {
-                InputCard(
-                    stepInput      = stepInput,
-                    onInputChange  = { stepInput = it },
-                    isEditing      = selectedStep != null,
-                    onSave         = {
-                        val value = stepInput.toIntOrNull()
-                        if (value != null) {
-                            val currentDate = LocalDateTime.now().format(
-                                DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")
-                            )
-                            if (selectedStep == null) {
-                                viewModel.insertStep(steps = value, date = currentDate)
-                            } else {
-                                viewModel.updateStep(
-                                    selectedStep!!.copy(steps = value, date = currentDate)
+                FoodInputCard(
+                    foodName         = foodName,
+                    calories         = calories,
+                    isEditing        = selectedFood != null,
+                    onFoodChange     = { foodName = it },
+                    onCaloriesChange = { calories = it },
+                    onSave           = {
+                        val cal = calories.toIntOrNull()
+                        if (foodName.isNotBlank() && cal != null) {
+                            val currentDate = LocalDateTime.now()
+                                .format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))
+
+                            if (selectedFood == null) {
+                                viewModel.insertFood(
+                                    name     = foodName,
+                                    calories = cal,
+                                    date     = currentDate
                                 )
-                                selectedStep = null
+                            } else {
+                                viewModel.updateFood(
+                                    selectedFood!!.copy(
+                                        name     = foodName,
+                                        calories = cal,
+                                        date     = currentDate
+                                    )
+                                )
+                                selectedFood = null
                             }
-                            stepInput = ""
+
+                            foodName = ""
+                            calories = ""
                         }
                     }
                 )
-                Spacer(modifier = Modifier.height(28.dp))
             }
 
-            // ── Today summary banner ──────────────────────────────────────────
-            if (todayTotal > 0) {
+            // ── Summary Banner ────────────────────────────────────────────────
+            if (todayCalories > 0) {
                 item {
-                    TodaySummaryBanner(totalSteps = todayTotal)
-                    Spacer(modifier = Modifier.height(20.dp))
+                    FoodSummaryBanner(totalCalories = todayCalories)
                 }
             }
 
-            // ── Section header ────────────────────────────────────────────────
+            // ── Section title ─────────────────────────────────────────────────
             item {
                 Text(
-                    text       = "Riwayat Langkah",
+                    text       = "Riwayat Makanan",
                     style      = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color      = TextPrimary
                 )
-                Spacer(modifier = Modifier.height(12.dp))
             }
 
             // ── Filter chips ──────────────────────────────────────────────────
@@ -174,8 +181,7 @@ fun StepScreen(
                             label    = {
                                 Text(
                                     text       = filter,
-                                    fontWeight = if (isSelected) FontWeight.SemiBold
-                                    else FontWeight.Normal,
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                                     fontSize   = 13.sp
                                 )
                             },
@@ -197,32 +203,103 @@ fun StepScreen(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
             }
 
-            // ── Step list ─────────────────────────────────────────────────────
-            items(filteredSteps) { item ->
-                StepItemCard(
-                    item     = item,
+            // ── Food list ─────────────────────────────────────────────────────
+            items(filteredList) { food ->
+                FoodItemCard(
+                    item     = food,
                     onEdit   = {
-                        selectedStep = item
-                        stepInput    = item.steps.toString()
+                        selectedFood = food
+                        foodName     = food.name
+                        calories     = food.calories.toString()
                     },
-                    onDelete = { viewModel.deleteStep(item) }
+                    onDelete = {
+                        viewModel.deleteFood(food)
+                        if (selectedFood?.id == food.id) {
+                            selectedFood = null
+                            foodName     = ""
+                            calories     = ""
+                        }
+                    }
                 )
-                Spacer(modifier = Modifier.height(10.dp))
+            }
+
+            item { Spacer(modifier = Modifier.height(80.dp)) }
+        }
+    }
+}
+
+// ── Summary Banner ────────────────────────────────────────────────────────────
+@Composable
+private fun FoodSummaryBanner(totalCalories: Int) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                Brush.linearGradient(
+                    listOf(PrimaryBlue, PrimaryPurple)
+                )
+            )
+            .padding(20.dp)
+    ) {
+        Row(
+            modifier              = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment     = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text  = "Total Kalori Hari Ini",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.85f)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text       = "$totalCalories",
+                        style      = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color      = Color.White
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text     = "kcal",
+                        style    = MaterialTheme.typography.bodyMedium,
+                        color    = Color.White.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(bottom = 3.dp)
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White.copy(alpha = 0.20f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector        = Icons.Rounded.Fastfood,
+                    contentDescription = null,
+                    tint               = Color.White,
+                    modifier           = Modifier.size(28.dp)
+                )
             }
         }
     }
 }
 
-// ── Input card ────────────────────────────────────────────────────────────────
+// ── Input Card ────────────────────────────────────────────────────────────────
 @Composable
-private fun InputCard(
-    stepInput     : String,
-    onInputChange : (String) -> Unit,
-    isEditing     : Boolean,
-    onSave        : () -> Unit
+private fun FoodInputCard(
+    foodName        : String,
+    calories        : String,
+    isEditing       : Boolean,
+    onFoodChange    : (String) -> Unit,
+    onCaloriesChange: (String) -> Unit,
+    onSave          : () -> Unit
 ) {
     Card(
         modifier  = Modifier.fillMaxWidth(),
@@ -232,10 +309,10 @@ private fun InputCard(
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
 
-            // Mini header
+            // Mini-header
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    modifier         = Modifier
+                    modifier = Modifier
                         .size(36.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(
@@ -245,7 +322,7 @@ private fun InputCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector        = Icons.Rounded.Add,
+                        imageVector        = if (isEditing) Icons.Rounded.Edit else Icons.Rounded.Add,
                         contentDescription = null,
                         tint               = if (isEditing) PrimaryPurple else PrimaryBlue,
                         modifier           = Modifier.size(18.dp)
@@ -253,7 +330,7 @@ private fun InputCard(
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text       = if (isEditing) "Edit Langkah" else "Catat Langkah Hari Ini",
+                    text       = if (isEditing) "Edit Makanan" else "Input Makanan Hari Ini",
                     style      = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color      = TextPrimary
@@ -262,36 +339,61 @@ private fun InputCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Food name field
             OutlinedTextField(
-                value           = stepInput,
-                onValueChange   = onInputChange,
-                label           = { Text("Jumlah Langkah") },
-                leadingIcon     = {
+                value         = foodName,
+                onValueChange = onFoodChange,
+                label         = { Text("Nama Makanan") },
+                leadingIcon   = {
                     Icon(
-                        imageVector        = Icons.Rounded.DirectionsWalk,
+                        imageVector        = Icons.Rounded.Fastfood,
                         contentDescription = null,
                         tint               = PrimaryBlue,
                         modifier           = Modifier.size(20.dp)
                     )
                 },
+                modifier = Modifier.fillMaxWidth(),
+                shape    = RoundedCornerShape(14.dp),
+                colors   = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor   = PrimaryBlue,
+                    unfocusedBorderColor = Color(0xFFE0E4F0),
+                    focusedLabelColor    = PrimaryBlue
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Calories field
+            OutlinedTextField(
+                value           = calories,
+                onValueChange   = onCaloriesChange,
+                label           = { Text("Kalori (kcal)") },
+                leadingIcon     = {
+                    Text(
+                        text     = "🔥",
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(start = 12.dp)
+                    )
+                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier        = Modifier.fillMaxWidth(),
                 shape           = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor   = if (isEditing) PrimaryPurple else PrimaryBlue,
+                colors          = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor   = PrimaryBlue,
                     unfocusedBorderColor = Color(0xFFE0E4F0),
-                    focusedLabelColor    = if (isEditing) PrimaryPurple else PrimaryBlue
+                    focusedLabelColor    = PrimaryBlue
                 )
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Save / Update button
             Button(
                 onClick  = onSave,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
-                shape    = RoundedCornerShape(14.dp),
+                shape  = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isEditing) PrimaryPurple else PrimaryBlue
                 )
@@ -312,66 +414,12 @@ private fun InputCard(
     }
 }
 
-// ── Today summary banner ──────────────────────────────────────────────────────
+// ── Food Item Card ────────────────────────────────────────────────────────────
 @Composable
-private fun TodaySummaryBanner(totalSteps: Int) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(
-                Brush.linearGradient(listOf(PrimaryBlue, PrimaryPurple))
-            )
-            .padding(horizontal = 20.dp, vertical = 16.dp)
-    ) {
-        Row(
-            verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier              = Modifier.fillMaxWidth()
-        ) {
-            Column {
-                Text(
-                    text  = "Total Hari Ini",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White.copy(alpha = 0.85f)
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text       = "$totalSteps",
-                    style      = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color      = Color.White
-                )
-                Text(
-                    text  = "langkah",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f)
-                )
-            }
-            Box(
-                modifier         = Modifier
-                    .size(52.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.White.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector        = Icons.Rounded.DirectionsWalk,
-                    contentDescription = null,
-                    tint               = Color.White,
-                    modifier           = Modifier.size(30.dp)
-                )
-            }
-        }
-    }
-}
-
-// ── Step item card ────────────────────────────────────────────────────────────
-@Composable
-private fun StepItemCard(
-    item     : StepEntity,
-    onEdit   : () -> Unit,
-    onDelete : () -> Unit
+private fun FoodItemCard(
+    item    : FoodEntity,
+    onEdit  : () -> Unit,
+    onDelete: () -> Unit
 ) {
     Card(
         modifier  = Modifier.fillMaxWidth(),
@@ -386,38 +434,45 @@ private fun StepItemCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-            // Step icon box
+            // Icon box gradient
             Box(
-                modifier         = Modifier
+                modifier = Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(
                         Brush.linearGradient(
                             listOf(
                                 PrimaryBlue.copy(alpha = 0.15f),
-                                PrimaryPurple.copy(alpha = 0.08f)
+                                PrimaryPurple.copy(alpha = 0.15f)
                             )
                         )
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector        = Icons.Rounded.DirectionsWalk,
+                    imageVector        = Icons.Rounded.Fastfood,
                     contentDescription = null,
                     tint               = PrimaryBlue,
-                    modifier           = Modifier.size(24.dp)
+                    modifier           = Modifier.size(22.dp)
                 )
             }
 
             Spacer(modifier = Modifier.width(14.dp))
 
-            // Steps & date
+            // Info
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text       = "${item.steps} langkah",
+                    text       = item.name,
                     style      = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color      = TextPrimary
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text       = "${item.calories} kcal",
+                    style      = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color      = PrimaryBlue
                 )
                 Spacer(modifier = Modifier.height(3.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -439,7 +494,7 @@ private fun StepItemCard(
             // Edit button
             IconButton(onClick = onEdit) {
                 Box(
-                    modifier         = Modifier
+                    modifier = Modifier
                         .size(36.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(PrimaryBlue.copy(alpha = 0.10f)),
@@ -459,7 +514,7 @@ private fun StepItemCard(
             // Delete button
             IconButton(onClick = onDelete) {
                 Box(
-                    modifier         = Modifier
+                    modifier = Modifier
                         .size(36.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(AccentRed.copy(alpha = 0.10f)),
