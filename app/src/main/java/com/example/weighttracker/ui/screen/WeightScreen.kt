@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.DateRange
@@ -99,127 +98,151 @@ fun WeightScreen(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color    = SurfaceBg
+        color = SurfaceBg
     ) {
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 24.dp)
+                .padding(horizontal = 20.dp, vertical = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
-            // ── Header ────────────────────────────────────────────────────────
-            Text(
-                text       = "Weight Tracker",
-                style      = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color      = TextPrimary
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text  = "Catat perkembangan berat badan Anda",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
-            )
+            item {
+                Text(
+                    text = "Weight Tracker",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
-            // ── Input card ────────────────────────────────────────────────────
-            InputCard(
-                weight         = weight,
-                onWeightChange = { weight = it },
-                isEditing      = selectedWeight != null,
-                onSave         = {
-                    val weightValue = weight.toFloatOrNull()
-                    if (weightValue != null) {
-                        val currentDate = LocalDateTime.now().format(
-                            DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")
-                        )
-                        if (selectedWeight == null) {
-                            viewModel.insertWeight(weight = weightValue, date = currentDate)
-                        } else {
-                            viewModel.updateWeight(
-                                selectedWeight!!.copy(weight = weightValue, date = currentDate)
+                Text(
+                    text = "Catat perkembangan berat badan Anda",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                InputCard(
+                    weight = weight,
+                    onWeightChange = { weight = it },
+                    isEditing = selectedWeight != null,
+                    onSave = {
+                        val weightValue = weight.toFloatOrNull()
+
+                        if (weightValue != null) {
+                            val currentDate = LocalDateTime.now().format(
+                                DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")
                             )
-                            selectedWeight = null
+
+                            if (selectedWeight == null) {
+                                viewModel.insertWeight(
+                                    weight = weightValue,
+                                    date = currentDate
+                                )
+                            } else {
+                                viewModel.updateWeight(
+                                    selectedWeight!!.copy(
+                                        weight = weightValue,
+                                        date = currentDate
+                                    )
+                                )
+                                selectedWeight = null
+                            }
+
+                            weight = ""
                         }
-                        weight = ""
                     }
-                }
-            )
+                )
+            }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // ── Section header ────────────────────────────────────────────────
-            Text(
-                text       = "Riwayat Berat Badan",
-                style      = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color      = TextPrimary
-            )
+                Text(
+                    text = "Riwayat Berat Badan",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(
+                        "Semua",
+                        "3 Hari",
+                        "7 Hari",
+                        "14 Hari"
+                    ).forEach { filter ->
 
-            // ── Filter chips ──────────────────────────────────────────────────
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                listOf("Semua", "3 Hari", "7 Hari", "14 Hari").forEach { filter ->
-                    val isSelected = selectedFilter == filter
-                    FilterChip(
-                        selected = isSelected,
-                        onClick  = { selectedFilter = filter },
-                        label    = {
-                            Text(
-                                text       = filter,
-                                fontWeight = if (isSelected) FontWeight.SemiBold
-                                else FontWeight.Normal,
-                                fontSize   = 13.sp
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor    = PrimaryBlue,
-                            selectedLabelColor        = Color.White,
-                            containerColor            = CardWhite,
-                            labelColor                = TextSecondary
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled              = true,
-                            selected             = isSelected,
-                            selectedBorderColor  = PrimaryBlue,
-                            borderColor          = Color(0xFFE0E4F0),
-                            selectedBorderWidth  = 0.dp,
-                            borderWidth          = 1.dp
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    )
+                        val isSelected = selectedFilter == filter
+
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = {
+                                selectedFilter = filter
+                            },
+                            label = {
+                                Text(
+                                    text = filter,
+                                    fontWeight =
+                                        if (isSelected)
+                                            FontWeight.SemiBold
+                                        else
+                                            FontWeight.Normal,
+                                    fontSize = 13.sp
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = PrimaryBlue,
+                                selectedLabelColor = Color.White,
+                                containerColor = CardWhite,
+                                labelColor = TextSecondary
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = isSelected,
+                                selectedBorderColor = PrimaryBlue,
+                                borderColor = Color(0xFFE0E4F0),
+                                selectedBorderWidth = 0.dp,
+                                borderWidth = 1.dp
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            items(filteredWeights) { item ->
+                WeightItemCard(
+                    item = item,
+                    onEdit = {
+                        selectedWeight = item
+                        weight = item.weight.toString()
+                    },
+                    onDelete = {
+                        viewModel.deleteWeight(item)
 
-            // ── Weight list ───────────────────────────────────────────────────
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(filteredWeights) { item ->
-                    WeightItemCard(
-                        item     = item,
-                        onEdit   = {
-                            selectedWeight = item
-                            weight = item.weight.toString()
-                        },
-                        onDelete = {
-                            viewModel.deleteWeight(item)
-                            if (selectedWeight?.id == item.id) {
-                                selectedWeight = null
-                                weight = ""
-                            }
+                        if (selectedWeight?.id == item.id) {
+                            selectedWeight = null
+                            weight = ""
                         }
-                    )
-                }
+                    }
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
